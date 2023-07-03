@@ -626,21 +626,21 @@ function compare_main_and_non_main_branch()
 
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
-        # echo "******************************"
-        # echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
-        # git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
-        # echo "${TMPFILE_LISTFILES_COMPARE}"
-        # cat ${TMPFILE_LISTFILES_COMPARE}
-        # echo "******************************"
+        echo "******************************"
+        echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
+        echo "${TMPFILE_LISTFILES_COMPARE}"
+        cat ${TMPFILE_LISTFILES_COMPARE}
+        echo "******************************"
 
-        # # Check directory have delete.lock
-        # git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        # Check directory have delete.lock
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
         
-        # echo "[+] FYI, list directories contain delete.lock: "
-        # cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        # sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        # cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock >> ${TMPFILE_LISTFILES_COMPARE}
-        # rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        echo "[+] FYI, list directories contain delete.lock: "
+        cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock >> ${TMPFILE_LISTFILES_COMPARE}
+        rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
     fi
 }
 
@@ -651,8 +651,6 @@ function get_list_helm_found(){
     echo "|   INFRASTRUCTURE KUBERNETES HELM MANAGEMENT   |"
     echo "-------------------------------------------------"
     echo "[*] List file helm.yaml is found :"
-
-    compare_main_and_non_main_branch
 
     if [[ "$(cat ${TMPFILE_LISTFILES_COMPARE} | grep -v "^$" | wc -l | tr -d ' ')" -gt 0 ]];then
         if [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
@@ -1001,6 +999,8 @@ function main(){
         # Add Company Private Helm Repository
         connect_helm_repo
 
+        compare_main_and_non_main_branch
+        
         get_list_helm_found
 
         # get_unique_list_providers
