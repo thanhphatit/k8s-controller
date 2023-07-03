@@ -642,6 +642,11 @@ function compare_main_and_non_main_branch()
     fi
 }
 
+echo "CHAO====>"
+git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "ayaml" 2>/dev/null
+
+echo "END=====><"
+
 function get_list_helm_found(){
     # Get all list defined yaml
     echo ""
@@ -1011,6 +1016,6 @@ function main(){
     cleanup
 }
 
-main "${@}"
+# main "${@}"
 
-exit 0
+# exit 0
