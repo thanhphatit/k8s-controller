@@ -621,13 +621,15 @@ function compare_main_and_non_main_branch()
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
         PREVIOUS_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | tail -n 1)
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
+
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
+
         echo "******************************"
         echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
         echo "${TMPFILE_LISTFILES_COMPARE}"
         cat ${TMPFILE_LISTFILES_COMPARE}
         echo "******************************"
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
