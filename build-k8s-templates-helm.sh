@@ -643,7 +643,7 @@ function compare_main_and_non_main_branch()
         rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
     fi
 }
-
+compare_main_and_non_main_branch
 function get_list_helm_found(){
     # Get all list defined yaml
     echo ""
@@ -651,6 +651,8 @@ function get_list_helm_found(){
     echo "|   INFRASTRUCTURE KUBERNETES HELM MANAGEMENT   |"
     echo "-------------------------------------------------"
     echo "[*] List file helm.yaml is found :"
+
+    compare_main_and_non_main_branch
 
     if [[ "$(cat ${TMPFILE_LISTFILES_COMPARE} | grep -v "^$" | wc -l | tr -d ' ')" -gt 0 ]];then
         if [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
@@ -999,9 +1001,7 @@ function main(){
         # Add Company Private Helm Repository
         connect_helm_repo
 
-        compare_main_and_non_main_branch
-        
-        get_list_helm_found
+        # get_list_helm_found
 
         # get_unique_list_providers
 
