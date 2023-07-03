@@ -625,6 +625,7 @@ function compare_main_and_non_main_branch()
         echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
         echo "${TMPFILE_LISTFILES_COMPARE}"
+        cat ${TMPFILE_LISTFILES_COMPARE}
         echo "******************************"
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
