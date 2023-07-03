@@ -622,9 +622,10 @@ function compare_main_and_non_main_branch()
         # We compare two latest commits changed files
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
         PREVIOUS_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | tail -n 1)
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
+
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments"
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments"
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments"
 
         # git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
 
