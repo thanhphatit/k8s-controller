@@ -25,7 +25,7 @@ ACTION="${1:-plan}"
 METHOD="${2:-http}" # Valid value: http / s3 / acr
 DEBUG="${3:-debug}"
 
-DISABLE_SCAN_ALL_FILES="${DISABLE_SCAN_ALL_FILES:-true}"
+SCAN_ALL_FILES="${SCAN_ALL_FILES:-false}"
 
 HTTP_USER="${HTTP_USER:-none}"
 HTTP_PASSWORD="${HTTP_PASSWORD:-none}"
@@ -651,13 +651,13 @@ function get_list_helm_found(){
             echo "[+] We do not find out any changed files between branches : ${BRANCH_MAIN}...${BRANCH_CURRENT}"
         fi
 
-        if [[ "${DISABLE_SCAN_ALL_FILES}" == "true" ]];then
-            echo "[+] We found setting: DISABLE_LOAD_ALL_FILES = true"
-            echo "[+] We stop scan all files.yaml"
-        else
-            echo "[+] We found setting: DISABLE_LOAD_ALL_FILES != true"
+        if [[ "${SCAN_ALL_FILES}" == "true" ]];then
+            echo "[+] We found setting: SCAN_ALL_FILES == true"
             echo "[+] So we decide to scan all files yaml"
-            find environments -type f -iname "helm.yaml" > ${TMPFILE_LIST_HL}
+            find environments -type f -iname "helm.yaml" -o -iname "helm.yml" > ${TMPFILE_LIST_HL}
+        else
+            echo "[+] We found setting: SCAN_ALL_FILES != true"
+            echo "[+] We stop scan all files.yaml"
         fi
 
     fi
@@ -986,7 +986,7 @@ function main(){
         get_list_helm_found
 
         get_unique_list_providers
-        
+
         build_k8s_templates_helm
         ;;
     esac
