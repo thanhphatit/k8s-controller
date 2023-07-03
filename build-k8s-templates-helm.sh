@@ -613,8 +613,8 @@ function compare_main_and_non_main_branch()
     elif [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
         # If this branch is : main
         # We compare two latest commits changed files
-        ls 
-        pwd
+        ls -la
+
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
         PREVIOUS_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | tail -n 1)
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
@@ -639,7 +639,8 @@ function get_list_helm_found(){
     echo "[*] List file helm.yaml is found :"
 
     compare_main_and_non_main_branch
-
+    cat ${TMPFILE_LISTFILES_COMPARE}
+    echo "*************************"
     if [[ "$(cat ${TMPFILE_LISTFILES_COMPARE} | grep -v "^$" | wc -l | tr -d ' ')" -gt 0 ]];then
         if [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
             echo "[+] We find out some changed files between commits branch [main] : ${PREVIOUS_COMMIT_HASH}...${LATEST_COMMIT_HASH}"
