@@ -27,6 +27,8 @@ DEBUG="${3:-debug}"
 
 SCAN_ALL_FILES="${SCAN_ALL_FILES:-false}"
 
+URL_K8S_CONFIG="${URL_K8S_CONFIG:-none}"
+
 HTTP_USER="${HTTP_USER:-none}"
 HTTP_PASSWORD="${HTTP_PASSWORD:-none}"
 
@@ -245,6 +247,7 @@ function pre_checking()
         export HELM_EXPERIMENTAL_OCI=1
     fi
 
+    check_plugin "cm-push diff"
     # Check if we miss credentials for AWS S3 Plugin
     if [[ "${METHOD}" == "s3" ]];then
         local FLAG_FOUND_AWS_CREDS="false"
@@ -486,6 +489,22 @@ function generate_aws_credentials(){
     fi
 }
 
+function download_file(){
+    local DOWN_USER=${1}
+    local DOWN_PASSWORD=${2}
+    local DOWN_FILE_EXPORT_NAME=${3}
+    local DOWN_URL=${4}
+
+    curl -u ${DOWN_USER}:${DOWN_PASSWORD} -o ${DOWN_FILE_EXPORT_NAME} ${DOWN_URL} &
+    wait
+
+    if [[ -f ${DOWN_FILE_EXPORT_NAME} ]];then
+        echo -e "${GC}[DOWNLOAD]: ${DOWN_FILE_EXPORT_NAME} SUCCESS ****"
+    else
+        echo -e "${RLC}[ERROR] not found download file!"
+    fi
+}
+
 function kubernetes_auth_login() {
     local _SERVICE_PROVIDER="$1"
     local _SERVICE_TYPE="$2"
@@ -519,6 +538,10 @@ function kubernetes_auth_login() {
 
     [ -d ${HOME}/.kube ] && rm -rf ${HOME}/.kube
     mkdir ${HOME}/.kube
+
+    if [[ "${URL_K8S_CONFIG}" != "none" ]];then
+        check_var "URL_USER URL_PASSWORD URL_K8S_CONFIG"
+    fi
 
     # Proceed Kubernetes Authentication Login
     if [[ "${_SERVICE_PROVIDER}" == "digital-ocean" ]];then
@@ -584,8 +607,7 @@ function kubernetes_auth_login() {
         echo "[-] Azure: Authenticating api with Configfile"
         echo ""
         
-        curl -u ${DEVOPS_ID}:${DEVOPS_TOKEN} -o ${HOME}/.kube/config https://dev.azure.com/${AZ_DEVOPS_NAME}/${AZ_DEVOPS_PROJECT}/_apis/git/repositories/${AZ_DEVOPS_REPOS}/Items?path=/${PATH_FILE_CONFIG}&version=master&download=true &
-        wait
+        download_file "${URL_USER}" "${URL_PASSWORD}" "${HOME}/.kube/config" "${URL_K8S_CONFIG}"
 
         kubectl config use-context ${_SERVICE_CONTEXT}
 
@@ -934,7 +956,7 @@ function build_k8s_templates_helm(){
 
             fi
 
-            function reConnect() {
+            function reconnect() {
                 RAMDOM_NUM=$((30 + $RANDOM % 90))
                 echo "Server can't connect, we will waiting ${RAMDOM_NUM}s and auto try again."
                 sleep ${RAMDOM_NUM}
@@ -946,7 +968,7 @@ function build_k8s_templates_helm(){
 
             until $(kubectl cluster-info &>/dev/null)
             do
-                reConnect
+                reconnect
             done
 
             echo ""
@@ -987,7 +1009,7 @@ function main(){
         init
 
         # Checking supported tool & plugin on local machine
-        pre_check_dependencies "helm"
+        pre_check_dependencies "helm kubectl"
 
         # Pre-checking
         pre_checking
