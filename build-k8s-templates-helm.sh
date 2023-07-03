@@ -1001,7 +1001,7 @@ function main(){
         # Add Company Private Helm Repository
         connect_helm_repo
 
-        # get_list_helm_found
+        get_list_helm_found
 
         # get_unique_list_providers
 
