@@ -639,6 +639,7 @@ function get_list_helm_found(){
     echo "[*] List file helm.yaml is found :"
 
     compare_main_and_non_main_branch
+    git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$"
     cat ${TMPFILE_LISTFILES_COMPARE}
     echo "*************************"
     if [[ "$(cat ${TMPFILE_LISTFILES_COMPARE} | grep -v "^$" | wc -l | tr -d ' ')" -gt 0 ]];then
