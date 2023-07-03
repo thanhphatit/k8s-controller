@@ -12,8 +12,8 @@
 ##      - Check if we had delete plag
 
 #### GLOBAL SETTING SHELL
-# set -o pipefail
-set -e
+set -o pipefail
+# set -e
 
 ####################
 # GLOBAL VARIABLES #
