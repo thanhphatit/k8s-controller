@@ -191,6 +191,10 @@ function init() {
     if [[ ! -f ${TMPFILE_LIST_HL_DIRS} ]];then
         touch ${TMPFILE_LIST_HL_DIRS}
     fi
+
+    if [[ ! -f ${TMPFILE_LISTFILES_COMPARE} ]];then
+        touch ${TMPFILE_LISTFILES_COMPARE}
+    fi
 }
 
 # Cleanup
@@ -601,7 +605,7 @@ function compare_main_and_non_main_branch()
     if [[ "${BRANCH_CURRENT}" != "${BRANCH_MAIN}" ]];then
         echo "[+] Compare branch: ${BRANCH_MAIN}...${BRANCH_CURRENT}"
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
-        git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yml$" > ${TMPFILE_LISTFILES_COMPARE}
+        git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock, ignore deleted files
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
@@ -619,9 +623,10 @@ function compare_main_and_non_main_branch()
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
         echo "******************************"
         echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" 2>&1
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
+        echo "${TMPFILE_LISTFILES_COMPARE}"
         echo "******************************"
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" > ${TMPFILE_LISTFILES_COMPARE}
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
@@ -644,12 +649,7 @@ function get_list_helm_found(){
     echo "[*] List file helm.yaml is found :"
 
     compare_main_and_non_main_branch
-    echo "#########################"
-    git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD 2>&1
-    git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$"
-    ls -la
-    cat ${TMPFILE_LISTFILES_COMPARE}
-    echo "*************************"
+
     if [[ "$(cat ${TMPFILE_LISTFILES_COMPARE} | grep -v "^$" | wc -l | tr -d ' ')" -gt 0 ]];then
         if [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
             echo "[+] We find out some changed files between commits branch [main] : ${PREVIOUS_COMMIT_HASH}...${LATEST_COMMIT_HASH}"
