@@ -605,10 +605,12 @@ function compare_main_and_non_main_branch()
     if [[ "${BRANCH_CURRENT}" != "${BRANCH_MAIN}" ]];then
         echo "[+] Compare branch: ${BRANCH_MAIN}...${BRANCH_CURRENT}"
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
+
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock, ignore deleted files
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        
         echo "[+] FYI, list directories contain delete.lock: "
         cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
         sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
@@ -624,24 +626,23 @@ function compare_main_and_non_main_branch()
 
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" >> ${TMPFILE_LISTFILES_COMPARE}
 
-        echo "******************************"
-        echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
-        echo "${TMPFILE_LISTFILES_COMPARE}"
-        cat ${TMPFILE_LISTFILES_COMPARE}
-        echo "******************************"
+        # echo "******************************"
+        # echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
+        # git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" 2>&1
+        # echo "${TMPFILE_LISTFILES_COMPARE}"
+        # cat ${TMPFILE_LISTFILES_COMPARE}
+        # echo "******************************"
 
-        # Check directory have delete.lock
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        echo "[+] FYI, list directories contain delete.lock: "
-        cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock >> ${TMPFILE_LISTFILES_COMPARE}
-        rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        # # Check directory have delete.lock
+        # git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        
+        # echo "[+] FYI, list directories contain delete.lock: "
+        # cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        # sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+        # cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock >> ${TMPFILE_LISTFILES_COMPARE}
+        # rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
     fi
 }
-
-git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
 
 function get_list_helm_found(){
     # Get all list defined yaml
@@ -1002,9 +1003,9 @@ function main(){
 
         get_list_helm_found
 
-        get_unique_list_providers
+        # get_unique_list_providers
 
-        build_k8s_templates_helm
+        # build_k8s_templates_helm
         ;;
     esac
 
