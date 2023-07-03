@@ -39,6 +39,8 @@ ACR_ARTIFACT_NAME="oci://${ACR_NAME}.azurecr.io/helm"
 BRANCH_CURRENT="main"
 BRANCH_MAIN="main"
 
+HELM_LIST_MAX_LIMIT="--max 2605"
+
 TMPFILE_LIST_HL=$(mktemp /tmp/tempfile-list-yaml-XXXXXXXX)
 TMPFILE_LIST_HL_DIRS="${TMPFILE_LIST_HL}.parent-dirs"
 TMPFILE_LIST_PROVIDERS="${TMPFILE_LIST_HL}.providers"
@@ -593,10 +595,11 @@ function kubernetes_auth_login() {
 function compare_main_and_non_main_branch()
 {
     # BRANCH_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
-    
+    echo "ngoai"
     # If current_branch is not main/master
     # We compare between master/main and this branch
     if [[ "${BRANCH_CURRENT}" != "${BRANCH_MAIN}" ]];then
+        echo "khac branch"
         echo "[+] Compare branch: ${BRANCH_MAIN}...${BRANCH_CURRENT}"
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
 
@@ -609,6 +612,7 @@ function compare_main_and_non_main_branch()
         rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
 
     elif [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
+        echo "cung branch"
         # If this branch is : main
         # We compare two latest commits changed files
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
@@ -721,7 +725,7 @@ function build_k8s_templates_helm(){
         fi
 
         echo "[*] List all Helm Release in All Namespaces in Kubernetes Cluster: $SERVICE_IDENTIFIER"
-        helm list --all --all-namespaces --max 2605 > ${LIST_HELM_RELEASE_K8S}
+        helm list --all --all-namespaces ${HELM_LIST_MAX_LIMIT} > ${LIST_HELM_RELEASE_K8S}
         cat ${LIST_HELM_RELEASE_K8S}
         echo ""
         ####
