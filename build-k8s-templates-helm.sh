@@ -620,13 +620,18 @@ function compare_main_and_non_main_branch()
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yml$" > ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock
-        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-        echo "[+] FYI, list directories contain delete.lock: "
         echo "******************************"
         echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD 2>&1
         echo "******************************"
 
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
+
+        echo "******************************"
+        echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD 2>&1
+        echo "******************************"
+        echo "[+] FYI, list directories contain delete.lock: "
         cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
         sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
         cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock >> ${TMPFILE_LISTFILES_COMPARE}
