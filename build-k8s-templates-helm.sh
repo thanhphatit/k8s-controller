@@ -595,11 +595,10 @@ function kubernetes_auth_login() {
 function compare_main_and_non_main_branch()
 {
     # BRANCH_CURRENT="$(git rev-parse --abbrev-ref HEAD)"
-    echo "ngoai"
+
     # If current_branch is not main/master
     # We compare between master/main and this branch
     if [[ "${BRANCH_CURRENT}" != "${BRANCH_MAIN}" ]];then
-        echo "khac branch"
         echo "[+] Compare branch: ${BRANCH_MAIN}...${BRANCH_CURRENT}"
         git diff --diff-filter=ACMRTUXB --name-only ${BRANCH_MAIN}...${BRANCH_CURRENT} | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
 
@@ -612,7 +611,6 @@ function compare_main_and_non_main_branch()
         rm -f ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
 
     elif [[ "${BRANCH_CURRENT}" == "${BRANCH_MAIN}" ]];then
-        echo "cung branch"
         # If this branch is : main
         # We compare two latest commits changed files
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
@@ -621,7 +619,7 @@ function compare_main_and_non_main_branch()
 
         # Check directory have delete.lock
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "\/delete.lock$" > ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
-      
+
         echo "[+] FYI, list directories contain delete.lock: "
         cat ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
         sed -i -e 's/delete.lock/helm.yaml/g' ${TMPFILE_LISTFILES_COMPARE}.file-delete-lock
