@@ -615,6 +615,10 @@ function compare_main_and_non_main_branch()
         # We compare two latest commits changed files
         LATEST_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | head -n 1)
         PREVIOUS_COMMIT_HASH=$(git log --pretty=format:'%H' -n 2 | tail -n 1)
+        echo "******************************"
+        echo "${LATEST_COMMIT_HASH} ${PREVIOUS_COMMIT_HASH}" 
+        git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD 2>&1
+        echo "******************************"
         git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$" > ${TMPFILE_LISTFILES_COMPARE}
 
         # Check directory have delete.lock
@@ -628,6 +632,8 @@ function compare_main_and_non_main_branch()
     fi
 }
 
+git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
+
 function get_list_helm_found(){
     # Get all list defined yaml
     echo ""
@@ -638,7 +644,7 @@ function get_list_helm_found(){
 
     compare_main_and_non_main_branch
     echo "#########################"
-    git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD
+    git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD 2>&1
     git diff --diff-filter=ACMRTUXB --name-only HEAD~1...HEAD | grep -i "^environments" | grep -i "yaml$"
     ls -la
     cat ${TMPFILE_LISTFILES_COMPARE}
