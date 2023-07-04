@@ -376,6 +376,10 @@ function pre_checking()
 
     local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
 
+    echo "${CHECK_HELM_PLUGIN_RESULT}"
+    check_plugin "helm plugin list" "diff"
+    
+
     if [[ "${CHECK_HELM_PLUGIN_RESULT}" == "false" ]];then
         helm plugin install https://github.com/databus23/helm-diff &>/dev/null
     fi
@@ -1027,13 +1031,16 @@ function main(){
         help
         ;;
     *)
+        # local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
+        # check_plugin "helm plugin list" "diff"
+        # echo "${CHECK_HELM_PLUGIN_RESULT}"
         ### Init tempfile, call function init()
         init
 
         ### Checking supported tool & plugin on local machine
         pre_check_dependencies "helm kubectl"
 
-        # Pre-checking
+        ### Pre-checking
         pre_checking
         
         ### Add Company Private Helm Repository
