@@ -97,8 +97,7 @@ function check_plugin(){
 
     for plugin in ${PLUGIN_LIST[@]}; do
         # If not found tools => exit
-        if [[ ! $(${COMMAND_PLUGIN_LIST} | grep -i "^${plugin}") ]];then
-            echo "null"
+        if [[ ! $(${COMMAND_PLUGIN_LIST} 2>/dev/null | grep -i "^${plugin}") ]];then
 cat << ALERTS
 [x] Not found this ${TOOLS_NAME} plugin [${plugin}] on machine.
 
@@ -376,13 +375,12 @@ function pre_checking()
 
     local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
 
-    if [[ "${CHECK_HELM_PLUGIN_RESULT}" == "null" ]];then
-        echo "hello"
+    if [[ "${CHECK_HELM_PLUGIN_RESULT}" != "" ]];then
         helm plugin install https://github.com/databus23/helm-diff &>/dev/null
     fi
 
     echo "${CHECK_HELM_PLUGIN_RESULT}"
-    
+
     # Check if we miss credentials for AWS S3 Plugin
     if [[ "${METHOD}" == "s3" ]];then
         generate_aws_credentials
