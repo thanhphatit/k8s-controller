@@ -98,7 +98,7 @@ function check_plugin(){
     for plugin in ${PLUGIN_LIST[@]}; do
         # If not found tools => exit
         if [[ ! $(${COMMAND_PLUGIN_LIST} | grep -i "^${plugin}") ]];then
-            echo "false"
+            echo "null"
 cat << ALERTS
 [x] Not found this ${TOOLS_NAME} plugin [${plugin}] on machine.
 
@@ -376,7 +376,7 @@ function pre_checking()
 
     local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
 
-    if [[ "${CHECK_HELM_PLUGIN_RESULT}" == "false" ]];then
+    if [[ ${CHECK_HELM_PLUGIN_RESULT} == "null" ]];then
         echo "hello"
         helm plugin install https://github.com/databus23/helm-diff &>/dev/null
     fi
