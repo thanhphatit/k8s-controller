@@ -104,7 +104,6 @@ cat << ALERTS
 
 Exit.
 ALERTS
-            exit 1
         fi
     done
 
