@@ -728,9 +728,10 @@ function build_k8s_templates_helm(){
     do
         # Get information
         SERVICE_METADATA_CONFIG="${line}/metadata.conf"
-        SERVICE_TYPE=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "service_type" | awk -F':' '{print $2}' | tr -d ' ')
         SERVICE_PROVIDER=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "service_provider" | awk -F':' '{print $2}' | tr -d ' ')
+        SERVICE_TYPE=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "service_type" | awk -F':' '{print $2}' | tr -d ' ')
         SERVICE_IDENTIFIER=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "service_identifier" | awk -F':' '{print $2}' | tr -d ' ')
+        SERVICE_CONTEXT=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "service_context" | awk -F':' '{print $2}' | tr -d ' ')
         SERVICE_ENVIRONMENT=$(cat ${SERVICE_METADATA_CONFIG} | grep -i "environment" | awk -F':' '{print $2}' | tr -d ' ')
 
         echo ""
