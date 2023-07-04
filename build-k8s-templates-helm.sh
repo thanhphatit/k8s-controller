@@ -376,10 +376,9 @@ function pre_checking()
     local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
 
     if [[ "${CHECK_HELM_PLUGIN_RESULT}" != "" ]];then
+        echo "CHAO"
         helm plugin install https://github.com/databus23/helm-diff &>/dev/null
     fi
-
-    echo "${CHECK_HELM_PLUGIN_RESULT}"
 
     # Check if we miss credentials for AWS S3 Plugin
     if [[ "${METHOD}" == "s3" ]];then
