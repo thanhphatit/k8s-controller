@@ -373,9 +373,9 @@ function pre_checking()
         export HELM_EXPERIMENTAL_OCI=1
     fi
 
-    local CHECK_HELM_PLUGIN_RESULT=$(check_plugin "helm plugin list" "diff")
+    local RESULT_CHECK_PLUGIN_HELM_DIFF=$(check_plugin "helm plugin list" "diff")
 
-    if [[ "${CHECK_HELM_PLUGIN_RESULT}" != "" ]];then
+    if [[ "${RESULT_CHECK_PLUGIN_HELM_DIFF}" != "" ]];then
         helm plugin install https://github.com/databus23/helm-diff &>/dev/null
     fi
 
