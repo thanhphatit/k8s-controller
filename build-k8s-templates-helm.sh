@@ -33,6 +33,8 @@ HTTP_USER="${HTTP_USER:-none}"
 HTTP_PASSWORD="${HTTP_PASSWORD:-none}"
 
 HELM_PRIVATE_REPO_NAME="${HELM_PRIVATE_REPO_NAME:-helm-charts}"
+HELM_LIST_MAX_LIMIT="--max 2605"
+
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-none}" #set this variable if you use S3 storage for Helm Charts
 
 ACR_NAME="${ACR_NAME:-none}" # Set this variable if you use ACR for Helm Charts
@@ -40,8 +42,6 @@ ACR_ARTIFACT_NAME="oci://${ACR_NAME}.azurecr.io/helm"
 
 BRANCH_CURRENT="main"
 BRANCH_MAIN="main"
-
-HELM_LIST_MAX_LIMIT="--max 2605"
 
 TMPFILE_LIST_HL=$(mktemp /tmp/tempfile-list-yaml-XXXXXXXX)
 TMPFILE_LIST_HL_DIRS="${TMPFILE_LIST_HL}.parent-dirs"
@@ -66,6 +66,8 @@ function check_var(){
             exit 1
         fi
     done
+
+    #### Example: check_var "DEVOPS THANHPHATIT"
 }
 
 function pre_check_dependencies(){
@@ -105,7 +107,7 @@ ALERTS
         fi
     done
 
-    #### Example: check_plugin "cm-push diff s3" 
+    #### Example: check_plugin "helm plugin list" "cm-push diff s3" 
 }
 
 function compare_versions() {
@@ -165,7 +167,7 @@ Usage: k8s-templates-helm [options...] [method...] [debug...]
 [*] OPTIONS:
     -h, --help            Show help
     -v, --version         Show info and version
-    apply                 Start deploy helm templates to k8s with your method ACR, HTTP, S3,...
+    apply                 Start deploy helm templates to k8s with helm get from your method ACR, HTTP, S3,...
     plan                  (This is default value) - plan will have people know what will happen
 
 [*] METHOD:
@@ -214,6 +216,10 @@ function cleanup() {
         rm -f ${TMPFILE_LIST_HL_DIRS}
     fi
 
+    if [[ -f ${TMPFILE_LISTFILES_COMPARE} ]];then
+        rm -f ${TMPFILE_LISTFILES_COMPARE}
+    fi
+
     if [[ "${METHOD}" == "s3" ]];then
         unset AWS_PROFILE
     fi
@@ -229,144 +235,6 @@ function cmdstatus(){
     else
         return 0
     fi
-}
-
-function pre_checking()
-{
-    # What is our ACTION & METHOD
-    echo "[+] ACTION: ${ACTION}"
-    echo "[+] METHOD: ${METHOD}"
-    
-    local HELM_VERSION_CURRENT=$(helm version --short --client 2>/dev/null | awk -F'+' '{print $1}' | awk -F'v' '{print $2}')
-    local HELM_VERSION_LIMMIT="3.8.0"
-
-    local RESULT_COMPARE_HELM_VERSION=$(compare_versions "${HELM_VERSION_CURRENT}" "${HELM_VERSION_LIMMIT}")
-
-    if [[ ${RESULT_COMPARE_HELM_VERSION} == "less" ]];then
-        echo -e "${YC}[WARNING] Because helm version current less than 3.8.0, so we will add variable [HELM_EXPERIMENTAL_OCI=1]"
-        export HELM_EXPERIMENTAL_OCI=1
-    fi
-
-    check_plugin "cm-push diff"
-    # Check if we miss credentials for AWS S3 Plugin
-    if [[ "${METHOD}" == "s3" ]];then
-        local FLAG_FOUND_AWS_CREDS="false"
-
-        # We need to check available AWS Credentials
-        if [[ "$(env | grep -i AWS_PROFILE | awk -F'=' '{print $2}')" != "" ]];then
-            FLAG_FOUND_AWS_CREDS="true"
-        elif [[ "$(env | grep -i DEFAULT_AWS_PROFILE | awk -F'=' '{print $2}')" != "" ]];then
-            FLAG_FOUND_AWS_CREDS="true"
-        elif [[ "$(env | grep -wE "AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_DEFAULT_REGION" | wc -l | tr -d ' ')" == "3" ]];then
-            FLAG_FOUND_AWS_CREDS="true"
-        fi
-
-        if [[ "${FLAG_FOUND_AWS_CREDS}" == "false" ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find AWS Credentials when you want to use Helm S3 Plugin"
-            exit 1
-        fi
-
-        # We need to check plugin S3 Helm
-        if [[ ! "$(helm plugin list | grep -i "^s3")" ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find Helm S3 Plugin to use S3 Method"
-            exit 1
-        fi
-
-        # Check if we get S3 Bucket Environment
-        if [[ ! $(echo "${S3_BUCKET_NAME}" | grep -i "^s3://" ) || "${S3_BUCKET_NAME}" == "none" ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find Environment Variable [S3_BUCKET_NAME]"
-            exit 1
-        fi
-
-    elif [[ "${METHOD}" == "http" ]];then
-        # Check if we miss credentials for http with cregs
-        FLAG_FOUND_HTTP_CREDS="false"
-
-        if [[ ${HTTP_USER} != "none" && ${HTTP_PASSWORD} != "none" ]];then
-            FLAG_FOUND_HTTP_CREDS="true"
-        fi
-
-        if [[ "$(env | grep -i "HELM_HOSTED_REPO_URL" | awk -F'=' '{print $2}')" == "" ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find env variable [HELM_HOSTED_REPO_URL] when you want to use Helm authenticate HTTP Web App"
-            exit 1
-        fi 
-
-    elif [[ "${METHOD}" == "acr" ]];then
-        # Check if we miss credentials for http with cregs
-        FLAG_FOUND_AZ_CREDS="false"
-
-        if [[ ${AZ_USER} != "" && ${AZ_PASSWORD} != "" ]];then
-            FLAG_FOUND_AZ_CREDS="true"
-        fi
-
-        if [[ "${FLAG_FOUND_AZ_CREDS}" == "false" ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find AZ Credentials when you want to use Helm Azure ACR"
-            exit 1
-        fi
-
-        # Check if we get ACR name Environment
-        if [[ ! $(echo "${ACR_ARTIFACT_NAME}" | grep -i "^oci://" ) ]];then
-            echo ""
-            echo -e "${YC}[x] CHECKING: cannot find Environment Variable [ACR_ARTIFACT_NAME]"
-            exit 1
-        fi
-    fi
-}
-
-function connect_helm_repo() {
-    echo "------------------------------------"
-    echo "|   HELM CHART REMOTE REPOSITORY   |"
-    echo "------------------------------------"
-
-    # Add Private Helm Repository
-    echo "[+] Connect Private Helm Repository: ${HELM_PRIVATE_REPO_NAME}"
-    if [[ $(helm repo list 2> /dev/null | grep -i ${HELM_PRIVATE_REPO_NAME} | awk '{print $1}') == ${HELM_PRIVATE_REPO_NAME} ]];then
-        # Remove current setting Helm Repo to add new
-        helm repo remove ${HELM_PRIVATE_REPO_NAME} 2> /dev/null
-    fi
-
-    if [[ "${METHOD}" == "s3" ]];then
-        # Helm S3 Bucket
-        # Get AWS Credentials
-        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} region ${HELM_AWS_REGION}
-        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} aws_access_key_id ${HELM_AWS_ACCESS_KEY}
-        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} aws_secret_access_key ${HELM_AWS_SECRET_KEY}
-
-        export AWS_PROFILE="${HELM_PRIVATE_REPO_NAME}"
-        # Connect to Helm Chart Service with S3 Plugin - S3 Bucket AWS
-        helm repo add ${HELM_PRIVATE_REPO_NAME} ${S3_BUCKET_NAME}
-
-    elif [[ "${METHOD}" == "acr" ]];then
-        # Connect to Helm Chart Service with ACR Method
-        helm repo add ${HELM_PRIVATE_REPO_NAME} https://${ACR_NAME}.azurecr.io/helm/v1/repo --username ${AZ_USER} --password ${AZ_PASSWORD}
-        helm registry login ${ACR_NAME}.azurecr.io --username ${AZ_USER} --password ${AZ_PASSWORD}
-
-    elif [[ "${METHOD}" == "http" ]];then
-        if [[ ${HTTP_USER} == "none" && ${HTTP_PASSWORD} == "none" ]];then
-            # Connect to Helm Chart Service with Web HTTP Method
-            helm repo add ${HELM_PRIVATE_REPO_NAME} ${HELM_HOSTED_REPO_URL}
-        else
-            helm repo add ${HELM_PRIVATE_REPO_NAME} ${HELM_HOSTED_REPO_URL} --username ${HTTP_USER} --password ${HTTP_PASSWORD}
-        fi
-
-    fi
-
-    # Update list helm chart repositories
-    helm repo update
-
-    # List active Helm Repositories
-    echo ""
-    echo "[+] List active Helm Chart Repositories"
-    helm repo list
-
-    echo ""
-    echo "[+] List active Charts in Helm Chart Repository: ${HELM_PRIVATE_REPO_NAME}"
-    helm search repo ${HELM_PRIVATE_REPO_NAME}
 }
 
 function generate_aws_credentials(){
@@ -423,12 +291,12 @@ function generate_aws_credentials(){
             if [[ "${env}" == "development" || "${env}" == "dev" || "${env}" == "develop" ]];then
                 # Check env
                 if [[ ! "$(env | grep -i "DEV_AWS_ACCESS_KEY_ID")" ]];then
-                    echo "[x] Cannot find ENV VAR: DEV_AWS_ACCESS_KEY_ID"
+                    echo -e "${RC}[x] Cannot find ENV VAR: DEV_AWS_ACCESS_KEY_ID"
                     exit 1
                 fi
 
                 if [[ ! "$(env | grep -i "DEV_AWS_SECRET_ACCESS_KEY")" ]];then
-                    echo "[x] Cannot find ENV VAR: DEV_AWS_SECRET_ACCESS_KEY"
+                    echo -e "${RC}[x] Cannot find ENV VAR: DEV_AWS_SECRET_ACCESS_KEY"
                     exit 1
                 fi
 
@@ -439,12 +307,12 @@ function generate_aws_credentials(){
             elif [[ "${env}" == "staging" || "${env}" == "stg" ]];then
                 # Check env
                 if [[ ! "$(env | grep -i "STG_AWS_ACCESS_KEY_ID")" ]];then
-                    echo "[x] Cannot find ENV VAR: STG_AWS_ACCESS_KEY_ID"
+                    echo -e "${RC}[x] Cannot find ENV VAR: STG_AWS_ACCESS_KEY_ID"
                     exit 1
                 fi
 
                 if [[ ! "$(env | grep -i "STG_AWS_SECRET_ACCESS_KEY")" ]];then
-                    echo "[x] Cannot find ENV VAR: STG_AWS_SECRET_ACCESS_KEY"
+                    echo -e "${RC}[x] Cannot find ENV VAR: STG_AWS_SECRET_ACCESS_KEY"
                     exit 1
                 fi
 
@@ -455,12 +323,12 @@ function generate_aws_credentials(){
             elif [[ "${env}" == "production" || "${env}" == "prod" || "${env}" == "prd"  ]];then
                 # Check env
                 if [[ ! "$(env | grep -i "PROD_AWS_ACCESS_KEY_ID")" ]];then
-                    echo "[x] Cannot find ENV VAR: PROD_AWS_ACCESS_KEY_ID"
+                    echo -e "${RC}[x] Cannot find ENV VAR: PROD_AWS_ACCESS_KEY_ID"
                     exit 1
                 fi
 
                 if [[ ! "$(env | grep -i "PROD_AWS_SECRET_ACCESS_KEY")" ]];then
-                    echo "[x] Cannot find ENV VAR: PROD_AWS_SECRET_ACCESS_KEY"
+                    echo -e "${RC}[x] Cannot find ENV VAR: PROD_AWS_SECRET_ACCESS_KEY"
                     exit 1
                 fi
 
@@ -487,6 +355,146 @@ function generate_aws_credentials(){
     else
         echo "[x] Do not find any configuration for AWS Environment Infra"
     fi
+}
+
+function pre_checking()
+{
+    # What is our ACTION & METHOD
+    echo "[+] ACTION: ${ACTION}"
+    echo "[+] METHOD: ${METHOD}"
+    
+    local HELM_VERSION_CURRENT=$(helm version --short --client 2>/dev/null | awk -F'+' '{print $1}' | awk -F'v' '{print $2}')
+    local HELM_VERSION_LIMMIT="3.8.0"
+
+    local RESULT_COMPARE_HELM_VERSION=$(compare_versions "${HELM_VERSION_CURRENT}" "${HELM_VERSION_LIMMIT}")
+
+    if [[ ${RESULT_COMPARE_HELM_VERSION} == "less" ]];then
+        echo -e "${YC}[WARNING] Because helm version current less than 3.8.0, so we will add variable [HELM_EXPERIMENTAL_OCI=1]"
+        export HELM_EXPERIMENTAL_OCI=1
+    fi
+
+    check_plugin "helm plugin list" "diff"
+    # Check if we miss credentials for AWS S3 Plugin
+    if [[ "${METHOD}" == "s3" ]];then
+        generate_aws_credentials
+        local FLAG_FOUND_AWS_CREDS="false"
+
+        # We need to check available AWS Credentials
+        if [[ "$(env | grep -i AWS_PROFILE | awk -F'=' '{print $2}')" != "" ]];then
+            FLAG_FOUND_AWS_CREDS="true"
+        elif [[ "$(env | grep -i DEFAULT_AWS_PROFILE | awk -F'=' '{print $2}')" != "" ]];then
+            FLAG_FOUND_AWS_CREDS="true"
+        elif [[ "$(env | grep -wE "AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_DEFAULT_REGION" | wc -l | tr -d ' ')" == "3" ]];then
+            FLAG_FOUND_AWS_CREDS="true"
+        fi
+
+        if [[ "${FLAG_FOUND_AWS_CREDS}" == "false" ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find AWS Credentials when you want to use Helm S3 Plugin"
+            exit 1
+        fi
+
+        # We need to check plugin S3 Helm
+        if [[ ! "$(helm plugin list | grep -i "^s3")" ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find Helm S3 Plugin to use S3 Method"
+            exit 1
+        fi
+
+        # Check if we get S3 Bucket Environment
+        if [[ ! $(echo "${S3_BUCKET_NAME}" | grep -i "^s3://" ) || "${S3_BUCKET_NAME}" == "none" ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find Environment Variable [S3_BUCKET_NAME]"
+            exit 1
+        fi
+
+    elif [[ "${METHOD}" == "http" ]];then
+        # Check if we miss credentials for http with cregs
+        FLAG_FOUND_HTTP_CREDS="false"
+
+        if [[ ${HTTP_USER} != "none" && ${HTTP_PASSWORD} != "none" ]];then
+            FLAG_FOUND_HTTP_CREDS="true"
+        fi
+
+        if [[ "$(env | grep -i "HELM_HOSTED_REPO_URL" | awk -F'=' '{print $2}')" == "" ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find env variable [HELM_HOSTED_REPO_URL] when you want to use Helm authenticate HTTP Web App"
+            exit 1
+        fi 
+
+    elif [[ "${METHOD}" == "acr" ]];then
+        # Check if we miss credentials for http with cregs
+        FLAG_FOUND_AZ_CREDS="false"
+
+        pre_check_dependencies "az"
+        if [[ ${AZ_USER} != "" && ${AZ_PASSWORD} != "" ]];then
+            FLAG_FOUND_AZ_CREDS="true"
+        fi
+
+        if [[ "${FLAG_FOUND_AZ_CREDS}" == "false" ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find AZ Credentials when you want to use Helm on Azure ACR to deploy K8S"
+            exit 1
+        fi
+
+        # Check if we get ACR name Environment
+        if [[ ! $(echo "${ACR_ARTIFACT_NAME}" | grep -i "^oci://" ) ]];then
+            echo ""
+            echo -e "${RC}[x] CHECKING: cannot find Environment Variable [ACR_ARTIFACT_NAME]"
+            exit 1
+        fi
+    fi
+}
+
+function connect_helm_repo() {
+    echo "------------------------------------"
+    echo "|   HELM CHART REMOTE REPOSITORY   |"
+    echo "------------------------------------"
+
+    # Add Private Helm Repository
+    echo "[+] Connect Private Helm Repository: ${HELM_PRIVATE_REPO_NAME}"
+    if [[ $(helm repo list 2> /dev/null | grep -i ${HELM_PRIVATE_REPO_NAME} | awk '{print $1}') == ${HELM_PRIVATE_REPO_NAME} ]];then
+        # Remove current setting Helm Repo to add new
+        helm repo remove ${HELM_PRIVATE_REPO_NAME} 2> /dev/null
+    fi
+
+    if [[ "${METHOD}" == "s3" ]];then
+        # Helm S3 Bucket
+        # Get AWS Credentials
+        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} region ${HELM_AWS_REGION}
+        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} aws_access_key_id ${HELM_AWS_ACCESS_KEY}
+        aws configure set --profile ${HELM_PRIVATE_REPO_NAME} aws_secret_access_key ${HELM_AWS_SECRET_KEY}
+
+        export AWS_PROFILE="${HELM_PRIVATE_REPO_NAME}"
+        # Connect to Helm Chart Service with S3 Plugin - S3 Bucket AWS
+        helm repo add ${HELM_PRIVATE_REPO_NAME} ${S3_BUCKET_NAME}
+
+    elif [[ "${METHOD}" == "acr" ]];then
+        # Connect to Helm Chart Service with ACR Method
+        helm repo add ${HELM_PRIVATE_REPO_NAME} https://${ACR_NAME}.azurecr.io/helm/v1/repo --username ${AZ_USER} --password ${AZ_PASSWORD}
+        helm registry login ${ACR_NAME}.azurecr.io --username ${AZ_USER} --password ${AZ_PASSWORD}
+
+    elif [[ "${METHOD}" == "http" ]];then
+        if [[ ${FLAG_FOUND_HTTP_CREDS} == "false" ]];then
+            # Connect to Helm Chart Service with Web HTTP Method
+            helm repo add ${HELM_PRIVATE_REPO_NAME} ${HELM_HOSTED_REPO_URL}
+        else
+            helm repo add ${HELM_PRIVATE_REPO_NAME} ${HELM_HOSTED_REPO_URL} --username ${HTTP_USER} --password ${HTTP_PASSWORD}
+        fi
+
+    fi
+
+    # Update list helm chart repositories
+    helm repo update
+
+    # List active Helm Repositories
+    echo ""
+    echo "[+] List active Helm Chart Repositories"
+    helm repo list
+
+    echo ""
+    echo "[+] List active Charts in Helm Chart Repository: ${HELM_PRIVATE_REPO_NAME}"
+    helm search repo ${HELM_PRIVATE_REPO_NAME}
 }
 
 function download_file(){
@@ -540,7 +548,7 @@ function kubernetes_auth_login() {
     mkdir ${HOME}/.kube
 
     if [[ "${URL_K8S_CONFIG}" != "none" ]];then
-        check_var "URL_USER URL_PASSWORD URL_K8S_CONFIG"
+        check_var "URL_USER URL_PASSWORD"
     fi
 
     # Proceed Kubernetes Authentication Login
@@ -579,7 +587,10 @@ function kubernetes_auth_login() {
         kubectl config current-context
 
     elif [[ "${_SERVICE_PROVIDER}" == "aws" && "${_SERVICE_TYPE}" == "eks" ]];then
-        generate_aws_credentials
+        echo "**************************"
+        echo "*        AWS CLOUD       *"
+        echo "**************************"
+
         echo "[-] EKS: authenticate and generate kubeconfig with IAM Authenticator AWS Profile [${_SERVICE_IDENTIFIER}]"
 
         AWS_ENV_IAM_PROFILE="${_SERVICE_ENVIRONMENT}-eks-deployment"
@@ -604,10 +615,13 @@ function kubernetes_auth_login() {
         echo "****************************"
         echo "*        AZURE CLOUD       *"
         echo "****************************"
+
         echo "[-] Azure: Authenticating api with Configfile"
         echo ""
         
-        download_file "${URL_USER}" "${URL_PASSWORD}" "${HOME}/.kube/config" "${URL_K8S_CONFIG}"
+        if [[ "${URL_K8S_CONFIG}" != "none" ]];then
+            download_file "${URL_USER}" "${URL_PASSWORD}" "${HOME}/.kube/config" "${URL_K8S_CONFIG}"
+        fi
 
         kubectl config use-context ${_SERVICE_CONTEXT}
 
@@ -724,14 +738,15 @@ function build_k8s_templates_helm(){
         echo "** $SERVICE_IDENTIFIER **"
         echo "**"
         echo "Processing on this Kubernetes cluster :"
-        echo "+ SERVICE_TYPE: $SERVICE_TYPE"
         echo "+ SERVICE_PROVIDER: $SERVICE_PROVIDER"
+        echo "+ SERVICE_TYPE: $SERVICE_TYPE"
         echo "+ SERVICE_IDENTIFIDER: $SERVICE_IDENTIFIER"
+        echo "+ SERVICE_CONTEXT: ${SERVICE_CONTEXT}"
         echo "+ SERVICE_ENVIRONMENT: ${SERVICE_ENVIRONMENT}"
         echo " "
 
-        # # We need a way to authenticate Kubernetes API
-        kubernetes_auth_login $SERVICE_PROVIDER $SERVICE_TYPE $SERVICE_IDENTIFIER $SERVICE_CONTEXT $SERVICE_ENVIRONMENT
+        # We need a way to authenticate Kubernetes API
+        kubernetes_auth_login ${SERVICE_PROVIDER} ${SERVICE_TYPE} ${SERVICE_IDENTIFIER} ${SERVICE_CONTEXT} ${SERVICE_ENVIRONMENT}
 
         # Get list directory contains file helm.yaml
         cat /dev/null > ${TMPFILE_LIST_HL_DIRS}
@@ -963,7 +978,7 @@ function build_k8s_templates_helm(){
                 # We will remove old config k8s
                 [ -d "$HOME/.kube" ] && rm -rf "$HOME/.kube" || echo "Folder is not exists !"
                 # Recreate config k8s and apply env
-                kubernetes_auth_login $SERVICE_PROVIDER $SERVICE_TYPE $SERVICE_IDENTIFIER $SERVICE_CONTEXT $SERVICE_ENVIRONMENT 
+                kubernetes_auth_login ${SERVICE_PROVIDER} ${SERVICE_TYPE} ${SERVICE_IDENTIFIER} ${SERVICE_CONTEXT} ${SERVICE_ENVIRONMENT}
             }
 
             until $(kubectl cluster-info &>/dev/null)
