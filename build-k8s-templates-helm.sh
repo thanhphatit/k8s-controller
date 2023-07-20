@@ -428,6 +428,11 @@ function pre_checking()
         fi 
 
     elif [[ "${METHOD}" == "acr" ]];then
+    
+        if [[ "${URL_K8S_CONFIG}" != "none" ]];then
+            check_var "URL_USER URL_PASSWORD"
+        fi
+
         # Check if we miss credentials for http with cregs
         FLAG_FOUND_AZ_CREDS="false"
 
@@ -549,12 +554,13 @@ function kubernetes_auth_login() {
         exit 1
     fi
 
+    if [[ -z ${_SERVICE_ENVIRONMENT} ]];then
+        echo "[x] Cannot find SERVICE_CONTEXT: $_SERVICE_ENVIRONMENT"
+        exit 1
+    fi
+
     [ -d ${HOME}/.kube ] && rm -rf ${HOME}/.kube
     mkdir ${HOME}/.kube
-
-    if [[ "${URL_K8S_CONFIG}" != "none" ]];then
-        check_var "URL_USER URL_PASSWORD"
-    fi
 
     # Proceed Kubernetes Authentication Login
     if [[ "${_SERVICE_PROVIDER}" == "digital-ocean" ]];then
@@ -679,7 +685,7 @@ function compare_main_and_non_main_branch()
     fi
 }
 
-function get_list_helm_found(){
+function get_all_list_defined_yaml(){
     # Get all list defined yaml
     echo ""
     echo "-------------------------------------------------"
@@ -1038,7 +1044,7 @@ function main(){
         ### Add Company Private Helm Repository
         connect_helm_repo
 
-        get_list_helm_found
+        get_all_list_defined_yaml
 
         get_unique_list_providers
 
