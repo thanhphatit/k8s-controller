@@ -481,8 +481,9 @@ function connect_helm_repo() {
 
     elif [[ "${METHOD}" == "acr" ]];then
         # Connect to Helm Chart Service with ACR Method
-        # helm repo add ${HELM_PRIVATE_REPO_NAME} https://${ACR_NAME}.azurecr.io/helm/v1/repo --username ${AZ_USER} --password ${AZ_PASSWORD}
-        helm repo add ${HELM_PRIVATE_REPO_NAME} ${ACR_ARTIFACT_NAME} --username ${AZ_USER} --password ${AZ_PASSWORD}
+        helm repo add ${HELM_PRIVATE_REPO_NAME} https://${ACR_NAME}.azurecr.io/helm/v1/repo --username ${AZ_USER} --password ${AZ_PASSWORD}
+        # helm repo add ${HELM_PRIVATE_REPO_NAME} ${ACR_ARTIFACT_NAME} --username ${AZ_USER} --password ${AZ_PASSWORD}
+
         helm registry login ${ACR_NAME}.azurecr.io --username ${AZ_USER} --password ${AZ_PASSWORD}
         az acr login --name ${ACR_NAME} -u ${AZ_USER} -p ${AZ_PASSWORD} &>/dev/null
 
